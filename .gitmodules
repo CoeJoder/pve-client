@@ -1,0 +1,3 @@
+[submodule "external/bash-tools"]
+	path = external/bash-tools
+	url = git@github.com:CoeJoder/bash-tools.git
