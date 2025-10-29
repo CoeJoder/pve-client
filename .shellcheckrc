@@ -5,4 +5,4 @@ external-sources=true
 source-path=SCRIPTDIR
 source-path=SCRIPTDIR/..
 source-path=SCRIPTDIR/../..
-source-path=SCRIPTDIR/../../external
+source-path=SCRIPTDIR/../../external/bash-tools/src
