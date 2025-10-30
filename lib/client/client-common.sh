@@ -111,22 +111,6 @@ assert_sourced
 
 # -------------------------- UTILITIES ----------------------------------------
 
-# set the project environment variables
-function set_env() {
-	reset_checks
-	check_file_exists DOTENV
-	print_failed_checks --error || return
-
-	# shellcheck source=.env
-	source "$DOTENV"
-}
-readonly -f set_env
-
-# common script setup tasks
-function housekeeping() {
-	set_env
-}
-
 # test whether this is dev env
 function is_devmode() {
 	[[ -n $_TOOLS_DIR ]] &>/dev/null
