@@ -16,9 +16,10 @@
 #
 # See inline comments for the directory structure of the deployment.
 
+# -------------------------- HEADER -------------------------------------------
+
 set -eEo pipefail
 shopt -s inherit_errexit
-trap 'on_err' ERR
 
 this_dir="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
 lib_dir="$(realpath "$this_dir/..")"
@@ -72,18 +73,48 @@ while true; do
 done
 
 entry_script="$1"
+shift
+
+# -------------------------- PRECONDITIONS ------------------------------------
+
+assert_not_sourced
+assert_not_on_server
+
+reset_checks
+check_is_defined PVE_SSH_HOST
+check_is_defined SERVER_CACHE_DIR  # no existence assertion on client
+check_directory_exists CLIENT_CACHE_DIR
+check_directory_exists EXT_BASHTOOLS_SRC_DIR
+check_directory_exists LIB_SERVER_DIR
+check_directory_exists lib_dir
+check_file_exists DOTENV
+
+for _command in sha256sum awk ssh; do
+	check_command_exists_on_path _command
+done
+print_failed_checks --error || exit
+
+# -------------------------- BANNER -------------------------------------------
+# -------------------------- PREAMBLE -----------------------------------------
+# -------------------------- RECONNAISSANCE -----------------------------------
+# -------------------------- EXECUTION ----------------------------------------
+
+trap 'on_err' ERR
 
 # search local filesystem for files to deploy
 function collect_files() {
 	{
-		# public shell scripts of external libs
-		find "$EXT_BASH_TOOLS_SRC_DIR" -type f \( -name '*.sh' -a -not -name '_*.sh' \) -print0
+		# the public shell scripts of external libs
+		find "$EXT_BASHTOOLS_SRC_DIR" -type f \( -name '*.sh' -a -not -name '_*.sh' \) -print0
 
-		# public shell scripts run on server
+		# the public shell scripts run on server
 		find "$LIB_SERVER_DIR" -type f \( -name '*.sh' -a -not -name '_*.sh' \) -print0
 
-		# public shell scripts shared by client and server
+		# the public shell scripts shared by client and server
 		find "$lib_dir" -maxdepth 1 -mindepth 1 -type f \( -name '*.sh' -a -not -name '_*.sh' \) -print0
+
+		# the project env vars
+		printf '%s\0' "$DOTENV"
 
 	} 2>/dev/null | sort -z
 }
@@ -92,6 +123,8 @@ function collect_files() {
 function package_files() {
 	local tmp_tar="$1"
 	local files
+	local dotenv_dir
+	dotenv_dir="$(realpath "$(dirname "$DOTENV")")"
 	
 	# Server deployment structure:
 	# <temp>
@@ -101,20 +134,21 @@ function package_files() {
 	# │          └──bash-tools.sh
 	# ├── server/
 	# ├── global-common.sh
-	# └── ...
+	# └── .env
 
 	readarray -td '' files < <(collect_files)
 
-	# package and tee it out
+	# package it, save it to temp file, and print its hash
 	# regex has leading slashes removed to match output of tar's default transformation
 	tar -cf - \
 		--transform "s|${LIB_SERVER_DIR#/}/\(.*\)|server/\1|" \
-		--transform "s|${EXT_BASH_TOOLS_SRC_DIR#/}/\(.*\)|external/bash-tools/src/\1|" \
+		--transform "s|${EXT_BASHTOOLS_SRC_DIR#/}/\(.*\)|external/bash-tools/src/\1|" \
 		--transform "s|${lib_dir#/}/\(.*\)|\1|" \
+		--transform "s|${dotenv_dir#/}/\(.*\)|\1|" \
 		"${files[@]}" 2>/dev/null | tee "$tmp_tar" | compute_hash
 }
 
-# computer the hash of a file from stdin
+# compute the hash of a file from stdin
 function compute_hash() {
 	sha256sum | awk '{print $1}'
 }
@@ -157,9 +191,9 @@ function execute_remote() {
 }
 
 function main() {
+	local tmp_tar
 	local hash
 	local remote_dir
-	local tmp_tar
 
 	if [[ ! -f "$entry_script" ]]; then
 		log error "Entry script not found: $entry_script"
@@ -181,3 +215,5 @@ function main() {
 }
 
 main "$@"
+
+# -------------------------- POSTCONDITIONS -----------------------------------
