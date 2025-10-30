@@ -9,11 +9,12 @@
 # ignore unused variable warnings (source'd script)
 # shellcheck disable=SC2034
 
+# source the global commons
+source "$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")/global-common.sh" || exit
+
 # -------------------------- CONSTANTS ----------------------------------------
 
-declare -r PROJECT_NAME='pve-client'
-declare -r REMOTE_PVE_ROOT_CA='/etc/pve/pve-root-ca.pem'
-declare -r REMOTE_PVECLIENT_BIN_DIR="\$HOME/.local/bin/pve-client"
+declare -r SERVER_DEPLOYMENT_PARENT_DIR="\$HOME/.local/bin/$PROJECT_NAME"
 declare -r SERVER_CACHE_DIR="/var/tmp/pve-client-cache"
 
 # resolve project paths based on 'dev' (source) or 'prod' (deployment)
@@ -38,7 +39,7 @@ if [[ "$(basename "$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")")" == "$PROJE
 	#  │       └── pve-client/              |
 	#  │           ├── external/            |
 	#  │           │   └── bash-tools/      |
-	#  │           │       └── src          | EXT_BASH_TOOLS_SRC_DIR
+	#  │           │       └── src          | EXT_BASHTOOLS_SRC_DIR
 	#  │           ├── client/              | LIB_CLIENT_DIR
 	#  |           |   └── client-common.sh | (this script)
 	#  │           ├── server/              | LIB_SERVER_DIR
@@ -55,7 +56,7 @@ if [[ "$(basename "$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")")" == "$PROJE
 	declare -r CLIENT_CACHE_DIR="$_XDG_CACHE_DIR/$PROJECT_NAME"
 	declare -r PVE_ROOT_CA="$CLIENT_CACHE_DIR/pve-root-ca.pem"
 	declare -r DOTENV="$_XDG_CONFIG_DIR/$PROJECT_NAME/.env"
-	declare -r EXT_BASH_TOOLS_SRC_DIR="$_XDG_DATA_DIR/$PROJECT_NAME/external/bash-tools/src"
+	declare -r EXT_BASHTOOLS_SRC_DIR="$_XDG_DATA_DIR/$PROJECT_NAME/external/bash-tools/src"
 	declare -r LIB_CLIENT_DIR="$_XDG_DATA_DIR/$PROJECT_NAME/client"
 	declare -r LIB_SERVER_DIR="$_XDG_DATA_DIR/$PROJECT_NAME/server"
 	declare -r PVECLIENT_BIN="$_XDG_BIN_DIR/pve.sh"
@@ -68,12 +69,12 @@ else
 	#  pve-client/                          | _PROJ_DIR
 	#  ├── external/                        |
 	#  │   └── bash-tools/                  |
-	#  │       └── src                      | EXT_BASH_TOOLS_SRC_DIR
+	#  │       └── src                      | EXT_BASHTOOLS_SRC_DIR
 	#  ├── lib/                             |
 	#  │   ├── client/                      | LIB_CLIENT_DIR
 	#  |   |   └── client-common.sh         | (this script)
 	#  │   └── server/                      | LIB_SERVER_DIR
-	#  |   └── global-common.sh             | 
+	#  |   └── global-common.sh             | GLOBAL_COMMON_SH
 	#  ├── src/                             |
 	#  │   └── pve.sh                       | PVECLIENT_BIN
 	#  ├── tools/                           | _TOOLS_DIR
@@ -89,7 +90,7 @@ else
 	declare -r CLIENT_CACHE_DIR="$_PROJ_DIR/cache"
 	declare -r PVE_ROOT_CA="$CLIENT_CACHE_DIR/pve-root-ca.pem"
 	declare -r DOTENV="$_PROJ_DIR/.env"
-	declare -r EXT_BASH_TOOLS_SRC_DIR="$_PROJ_DIR/external/bash-tools/src"
+	declare -r EXT_BASHTOOLS_SRC_DIR="$_PROJ_DIR/external/bash-tools/src"
 	declare -r LIB_CLIENT_DIR="$_PROJ_DIR/lib/client"
 	declare -r LIB_SERVER_DIR="$_PROJ_DIR/lib/server"
 	declare -r PVECLIENT_BIN="$_PROJ_DIR/src/pve.sh"
@@ -101,7 +102,7 @@ fi
 # -------------------------- IMPORTS ------------------------------------------
 
 # import external libs
-source "$EXT_BASH_TOOLS_SRC_DIR/bash-tools.sh"
+source "$EXT_BASHTOOLS_SRC_DIR/bash-tools.sh"
 
 # -------------------------- PRECONDITIONS ------------------------------------
 

@@ -1,8 +1,7 @@
 #!/bin/bash
 
 # create-env.sh
-#
-# Generates an editable file containing the project's environment variables.
+# Generate an .env file containing the project's environment variables.
 
 # -------------------------- HEADER -------------------------------------------
 
@@ -22,7 +21,7 @@ print_failed_checks --error
 # -------------------------- PREAMBLE -----------------------------------------
 
 cat <<EOF
-Generates the project's environment variables at ${theme_filename}$DOTENV${color_reset}
+Generate the project's environment variables at ${theme_filename}$DOTENV${color_reset}
 EOF
 press_any_key_to_continue
 
@@ -81,7 +80,7 @@ printinfo "Generating ${theme_filename}$DOTENV${color_reset}:"
 cat <<EOF | tee "$DOTENV"
 # .env
 #
-# Environment variables used by \`pve-client\` client scripts.
+# Environment variables used by \`pve-client\`.
 
 # -------------------------- CONFIGURABLE; EDIT AS NEEDED ---------------------
 
