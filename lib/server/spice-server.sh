@@ -11,19 +11,20 @@ shopt -s inherit_errexit
 
 this_dir="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
 source "$this_dir/server-common.sh"
+housekeeping
 
 function show_usage() {
 	cat >&2 <<-EOF
 		Usage: $(basename "${BASH_SOURCE[0]}") [options]
 		Options:
-		--vmid ${underline}val${nounderline}     The virtual machine ID
-		--timeout ${underline}val${nounderline}  The VM restart timeout in seconds (default: 15)
-		--help, -h     Show this message
+		--vmid ${underline}val${nounderline}         The virtual machine ID
+		--timeout, -t ${underline}val${nounderline}  The VM restart timeout in seconds (default: 15)
+		--help, -h         Show this message
 	EOF
 }
 
 _parsed_args=$(getopt \
-	--options='h,q' \
+	--options='h,t' \
 	--longoptions='help,vmid:,timeout:' \
 	--name "$(basename "${BASH_SOURCE[0]}")" -- "$@")
 eval set -- "$_parsed_args"
@@ -39,7 +40,7 @@ while true; do
 		shift 2
 		continue
 		;;
-	--timeout)
+	-t | --timeout)
 		timeout="$2"
 		shift 2
 		continue
