@@ -178,6 +178,7 @@ function qm() {
 
 	qm_command+=("$@")
 	log trace "RPC: \`${qm_command[*]}\`"
+	# shellcheck disable=SC2029  # client-side expansion
 	ssh "$PVE_SSH_HOST" "${qm_command[@]}" || return
 }
 readonly -f qm
@@ -197,6 +198,7 @@ function pct() {
 
 	pct_command+=("$@")
 	log trace "RPC: \`${pct_command[*]}\`"
+	# shellcheck disable=SC2029  # client-side expansion
 	ssh "$PVE_SSH_HOST" "${pct_command[@]}" || return
 }
 readonly -f pct
@@ -216,6 +218,7 @@ function pvesh() {
 
 	pvesh_command+=("$@")
 	log trace "RPC: \`${pvesh_command[*]}\`"
+	# shellcheck disable=SC2029  # client-side expansion
 	ssh "$PVE_SSH_HOST" "${pvesh_command[@]}" || return
 }
 readonly -f pvesh
@@ -232,7 +235,7 @@ function is_valid_vmid() {
 	fi
 	local vmid="$1"
 	shift
-	
+
 	[[ "$vmid" =~ ^[[:digit:]]+$ ]] && ((vmid >= 100 && vmid <= 1000000))
 }
 readonly -f is_valid_vmid
@@ -250,11 +253,11 @@ function manage_guest() {
 	local vm_command="$1"
 	local vmid_or_name="$2"
 	shift 2
+	local -a args_and_options=("$@")
 	local -A guests
 	local id name status type node
 	local vmid
 	local vmtype # 'qemu' or 'lxc'
-	local wrapped_command
 
 	if is_valid_vmid "$vmid_or_name"; then
 		vmid="$vmid_or_name"
@@ -284,10 +287,10 @@ function manage_guest() {
 	# Perform RPC depending on vmtype
 	case "$vmtype" in
 	'qemu')
-		qm "$vm_command" "$vmid" "$@" || return
+		qm "$vm_command" "$vmid" "${args_and_options[@]}" || return
 		;;
 	'lxc')
-		pct "$vm_command" "$vmid" "$@" || return
+		pct "$vm_command" "$vmid" "${args_and_options[@]}" || return
 		;;
 	*)
 		log error "Unknown guest type: $vmtype"
