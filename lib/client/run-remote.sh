@@ -1,5 +1,5 @@
 #!/bin/bash
-
+#
 # run-remote.sh
 # Securely deploy and execute server-side code on Proxmox host.
 #
@@ -23,7 +23,7 @@ shopt -s inherit_errexit
 
 this_dir="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
 lib_dir="$(realpath "$this_dir/..")"
-source "$this_dir/client-common.sh"
+source "$this_dir/client-commons.sh"
 housekeeping
 
 function show_usage() {

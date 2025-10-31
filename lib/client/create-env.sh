@@ -8,7 +8,7 @@
 set -e
 
 this_dir="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
-source "$this_dir/client-common.sh"
+source "$this_dir/client-commons.sh"
 
 # -------------------------- PRECONDITIONS ------------------------------------
 

@@ -1,5 +1,5 @@
 #!/bin/bash
-
+#
 # spice-server.sh
 # Set the VM's display to 'qxl', start or restart the VM to apply settings, and
 # return a SPICE ticket in JSON format to be parsed by the client.
@@ -10,7 +10,7 @@ set -eEo pipefail
 shopt -s inherit_errexit
 
 this_dir="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
-source "$this_dir/server-common.sh"
+source "$this_dir/server-commons.sh"
 housekeeping
 
 function show_usage() {
@@ -73,10 +73,6 @@ check_is_defined PVE_HOST
 check_is_valid_port PVE_PORT
 check_is_defined PVE_NODE
 check_is_defined PVE_SSH_HOST
-
-for _command in jq; do
-	check_command_exists_on_path _command
-done
 print_failed_checks --error || exit
 
 # -------------------------- BANNER -------------------------------------------
@@ -103,21 +99,24 @@ function get_spice_ticket() {
 }
 
 function main() {
-	set_display_spice "$vmid" "$timeout"
+	local status
 
-	if is_vm_stopped "$vmid"; then
+	set_display_spice "$vmid" "$timeout" || return
+	
+	status="$(get_vm_status "$vmid")"
+	if [[ "$status" == "$VM_STATUS_STOPPED" ]]; then
 		log info 'Starting VM...'
 		sudo qm start "$vmid" || return
 		wait_until_vm_is_running "$vmid" "$timeout" || return
-	elif is_vm_running "$vmid"; then
+	elif [[ "$status" == "$VM_STATUS_RUNNING" ]]; then
 		log info 'Restarting VM to apply changes...'
 		sudo qm stop "$vmid" || return
 		wait_until_vm_is_stopped "$vmid" "$timeout" || return
 		sudo qm start "$vmid" || return
 		wait_until_vm_is_running "$vmid" "$timeout" || return
 	else
-		log error "VM not started.  Status: $(get_vm_status "$vmid")"
-		continue_or_exit 1 "Launch SPICE client anyway?"
+		log warn "VM is ${status}."
+		yes_or_no --default-yes "Launch SPICE client anyway?" || return
 	fi
 	
 	get_spice_ticket || return

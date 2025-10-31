@@ -1,7 +1,6 @@
 #!/bin/bash
-
-# global-common.sh
 #
+# global-commons.sh
 # Constants used project-wide.
 
 # -------------------------- HEADER -------------------------------------------
@@ -9,13 +8,14 @@
 # ignore unused variable warnings (source'd script)
 # shellcheck disable=SC2034
 
-# -------------------------- CONSTANTS ----------------------------------------
+# -------------------------- PATHS --------------------------------------------
 
 declare -r PROJECT_NAME='pve-client'
 declare -r SERVER_PVE_ROOT_CA='/etc/pve/pve-root-ca.pem'
 
-# -------------------------- IMPORTS ----------------------------------------
-# -------------------------- PRECONDITIONS ----------------------------------
+# -------------------------- IMPORTS ------------------------------------------
+# -------------------------- PRECONDITIONS ------------------------------------
+# -------------------------- CONSTANTS ----------------------------------------
 # -------------------------- UTILITIES ----------------------------------------
 
 # set the project environment variables
