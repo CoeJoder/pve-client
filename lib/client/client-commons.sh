@@ -126,60 +126,33 @@ VM_STATUS_PAUSED='paused'
 VM_STATUS_SUSPENDED='suspended'
 
 # Commands that work for both qemu & lxc
-VM_COMMAND_CLONE='clone'
-VM_COMMAND_CONFIG='config'
-VM_COMMAND_CREATE='create'
-VM_COMMAND_DELSNAPSHOT='delsnapshot'
-VM_COMMAND_DESTROY='destroy'
-VM_COMMAND_HELP='help'
-VM_COMMAND_LIST='list'
-VM_COMMAND_LISTSNAPSHOT='listsnapshot'
-VM_COMMAND_MIGRATE='migrate'
-VM_COMMAND_PENDING='pending'
-VM_COMMAND_REBOOT='reboot'
-VM_COMMAND_REMOTE_MIGRATE='remote-migrate'
-VM_COMMAND_RESCAN='rescan'
-VM_COMMAND_RESIZE='resize'
-VM_COMMAND_RESUME='resume'
-VM_COMMAND_ROLLBACK='rollback'
-VM_COMMAND_SET='set'
-VM_COMMAND_SHUTDOWN='shutdown'
-VM_COMMAND_SNAPSHOT='snapshot'
-VM_COMMAND_START='start'
-VM_COMMAND_STATUS='status'
-VM_COMMAND_STOP='stop'
-VM_COMMAND_SUSPEND='suspend'
-VM_COMMAND_TEMPLATE='template'
-VM_COMMAND_TERMINAL='terminal'
-VM_COMMAND_UNLOCK='unlock'
-
-ALL_VM_COMMANDS=(
-	"$VM_COMMAND_CLONE"
-	"$VM_COMMAND_CONFIG"
-	"$VM_COMMAND_CREATE"
-	"$VM_COMMAND_DELSNAPSHOT"
-	"$VM_COMMAND_DESTROY"
-	"$VM_COMMAND_HELP"
-	"$VM_COMMAND_LIST"
-	"$VM_COMMAND_LISTSNAPSHOT"
-	"$VM_COMMAND_MIGRATE"
-	"$VM_COMMAND_PENDING"
-	"$VM_COMMAND_REBOOT"
-	"$VM_COMMAND_REMOTE_MIGRATE"
-	"$VM_COMMAND_RESCAN"
-	"$VM_COMMAND_RESIZE"
-	"$VM_COMMAND_RESUME"
-	"$VM_COMMAND_ROLLBACK"
-	"$VM_COMMAND_SET"
-	"$VM_COMMAND_SHUTDOWN"
-	"$VM_COMMAND_SNAPSHOT"
-	"$VM_COMMAND_START"
-	"$VM_COMMAND_STATUS"
-	"$VM_COMMAND_STOP"
-	"$VM_COMMAND_SUSPEND"
-	"$VM_COMMAND_TEMPLATE"
-	"$VM_COMMAND_TERMINAL"
-	"$VM_COMMAND_UNLOCK"
+declare -rA ALL_VM_COMMANDS=(
+	[CLONE]='clone'
+	[CONFIG]='config'
+	[CREATE]='create'
+	[DELSNAPSHOT]='delsnapshot'
+	[DESTROY]='destroy'
+	[HELP]='help'
+	[LIST]='list'
+	[LISTSNAPSHOT]='listsnapshot'
+	[MIGRATE]='migrate'
+	[PENDING]='pending'
+	[REBOOT]='reboot'
+	[REMOTE_MIGRATE]='remote-migrate'
+	[RESCAN]='rescan'
+	[RESIZE]='resize'
+	[RESUME]='resume'
+	[ROLLBACK]='rollback'
+	[SET]='set'
+	[SHUTDOWN]='shutdown'
+	[SNAPSHOT]='snapshot'
+	[START]='start'
+	[STATUS]='status'
+	[STOP]='stop'
+	[SUSPEND]='suspend'
+	[TEMPLATE]='template'
+	[TERMINAL]='terminal'
+	[UNLOCK]='unlock'
 )
 
 # -------------------------- UTILITIES ----------------------------------------
@@ -190,6 +163,9 @@ function is_devmode() {
 }
 readonly -f is_devmode
 
+# Usage:
+#   qm <command> <vmid> [options]
+#
 # RPC wrapper for `qm`
 function qm() {
 	functrace "$@"
@@ -206,6 +182,9 @@ function qm() {
 }
 readonly -f qm
 
+# Usage:
+#   pct <command> <vmid> [options]
+#
 # RPC wrapper for `pct`
 function pct() {
 	functrace "$@"
@@ -222,6 +201,9 @@ function pct() {
 }
 readonly -f pct
 
+# Usage:
+#   pvesh <command> [args] [options]
+#
 # RPC wrapper for `pvesh`
 function pvesh() {
 	functrace "$@"
@@ -244,15 +226,21 @@ readonly -f pvesh
 # Returns true if arg is within valid numerical range.
 function is_valid_vmid() {
 	functrace "$@"
+	if (($# < 1)); then
+		log error "Usage: is_valid_vmid <vmid>"
+		return 255
+	fi
 	local vmid="$1"
+	shift
+	
 	[[ "$vmid" =~ ^[[:digit:]]+$ ]] && ((vmid >= 100 && vmid <= 1000000))
 }
 readonly -f is_valid_vmid
 
 # Usage:
-#   manage_guest <command> <vmid-or-name> [args] [options]
+#   manage_guest <command> <guest> [args] [options]
 #
-# Unified qemu/LXC remote guest management interface.
+# Provides a unified qemu/LXC remote guest management interface.
 function manage_guest() {
 	functrace "$@"
 	if (($# < 2)); then
@@ -262,10 +250,8 @@ function manage_guest() {
 	local vm_command="$1"
 	local vmid_or_name="$2"
 	shift 2
-
 	local -A guests
 	local id name status type node
-
 	local vmid
 	local vmtype # 'qemu' or 'lxc'
 	local wrapped_command
@@ -311,82 +297,148 @@ function manage_guest() {
 }
 readonly -f manage_guest
 
-# get VM status
+# Usage:
+#   get_vm_status <guest>
+#
+# Gets VM or container status.
 function get_vm_status() {
 	functrace "$@"
-	local vmid="$1"
-	ssh "$PVE_SSH_HOST" "sudo qm status '$vmid'" | awk '{print $2}' || return
+	if (($# != 1)); then
+		log error "Usage: get_vm_status <guest>"
+		return 1
+	fi
+	local guest="$1"
+	shift
+
+	manage_guest status "$guest" | awk '{print $2}' || return
 }
 readonly -f get_vm_status
 
+# Usage:
+#   is_vm_status <guest> <status>
+#
+# Tests whether a VM is of the given status.
 function is_vm_status() {
 	functrace "$@"
-	local vmid="$1"
+	if (($# != 2)); then
+		log error "Usage: is_vm_status <guest> <status>"
+		return 1
+	fi
+	local guest="$1"
 	local status_to_check="$2"
+	shift 2
 	local status_actual
-	status_actual="$(get_vm_status "$vmid")" || return
+
+	status_actual="$(get_vm_status "$guest")" || return
 	[[ "$status_to_check" == "$status_actual" ]]
 }
 readonly -f is_vm_status
 
+# Usage:
+#   is_vm_stopped <guest>
+#
+# Tests whether a VM is stopped.
 function is_vm_stopped() {
 	functrace "$@"
-	is_vm_status "$1" "$VM_STATUS_STOPPED"
+	if (($# != 1)); then
+		log error "Usage: is_vm_stopped <guest>"
+		return 1
+	fi
+	local guest="$1"
+	shift
+
+	is_vm_status "$guest" "$VM_STATUS_STOPPED"
 }
 readonly -f is_vm_stopped
 
+# Usage:
+#   is_vm_running <guest>
+#
+# Tests whether a VM is running.
 function is_vm_running() {
 	functrace "$@"
-	is_vm_status "$1" "$VM_STATUS_RUNNING"
+	if (($# != 1)); then
+		log error "Usage: is_vm_running <guest>"
+		return 1
+	fi
+	local guest="$1"
+	shift
+
+	is_vm_status "$guest" "$VM_STATUS_RUNNING"
 }
 readonly -f is_vm_running
 
 # Usage:
-#   wait_until_vm_is <vmid> <status> <timeout>
+#   wait_until_vm_is <guest> <status> <timeout>
 #
 # Waits the given number of seconds for VM to be of given status.
 function wait_until_vm_is() {
 	functrace "$@"
 	if (($# < 3)); then
-		log error "Usage: wait_until_vm_is <vmid> <status> <timeout>"
+		log error "Usage: wait_until_vm_is <guest> <status> <timeout>"
 		return 255
 	fi
-	local vmid="$1"
+	local guest="$1"
 	local status="$2"
 	local timeout="$3"
+	shift 3
 	local i status_actual
 
-	log debug "Waiting $timeout seconds for VM $vmid to be $status..."
+	log debug "Waiting $timeout seconds for VM $guest to be $status..."
 	for ((i = 0; i < timeout; i++)); do
-		if is_vm_status "$vmid" "$status"; then
+		if is_vm_status "$guest" "$status"; then
 			return
 		fi
 		sleep 1
 	done
 
-	if ! is_vm_status "$vmid" "$status"; then
+	if ! is_vm_status "$guest" "$status"; then
 		log error "Timed out waiting for VM to be '$status'"
 		return 1
 	fi
 }
 readonly -f wait_until_vm_is
 
+# Usage:
+#   wait_until_vm_is_stopped <guest> <timeout>
+#
+# Waits the given number of seconds for VM to be stopped.
 function wait_until_vm_is_stopped() {
 	functrace "$@"
-	wait_until_vm_is "$1" "$VM_STATUS_STOPPED" "$2"
+	if (($# < 3)); then
+		log error "Usage: wait_until_vm_is_stopped <guest> <timeout>"
+		return 255
+	fi
+	local guest="$1"
+	local timeout="$2"
+	shift 2
+
+	wait_until_vm_is "$guest" "$VM_STATUS_STOPPED" "$timeout"
 }
 readonly -f wait_until_vm_is_stopped
 
+# Usage:
+#   wait_until_vm_is_running <guest> <timeout>
+#
+# Waits the given number of seconds for VM to be running.
 function wait_until_vm_is_running() {
 	functrace "$@"
-	wait_until_vm_is "$1" "$VM_STATUS_RUNNING" "$2"
+	if (($# < 3)); then
+		log error "Usage: wait_until_vm_is_running <guest> <timeout>"
+		return 255
+	fi
+	local guest="$1"
+	local timeout="$2"
+	shift 2
+
+	wait_until_vm_is "$guest" "$VM_STATUS_RUNNING" "$timeout"
 }
 readonly -f wait_until_vm_is_running
 
 # Usage:
 #   get_guest_id <guest-name>
 #
-# Looks up the ID of a Proxmox guest (VM or container) by name.
+# Looks up the ID of a VM by name.
 function get_guest_id() {
 	functrace "$@"
 	if (($# != 1)); then
@@ -394,6 +446,7 @@ function get_guest_id() {
 		return 1
 	fi
 	local guest_name="$1"
+	shift
 	local vmid
 
 	vmid=$(ssh "$PVE_SSH_HOST" "sudo pvesh get /cluster/resources --output-format json" |

@@ -29,9 +29,9 @@ function kicktire_get_all_guests() {
 	get_all_guests guests
 
 	for id in "${!guests[@]}"; do
-			IFS=' ' read -r name status type node <<<"${guests[$id]}"
-			printf "ID: %-5s  Name: %-10s  Status: %-8s  Type: %-5s  Node: %s\n" \
-					"$id" "$name" "$status" "$type" "$node"
+		IFS=' ' read -r name status type node <<<"${guests[$id]}"
+		printf "ID: %-5s  Name: %-10s  Status: %-8s  Type: %-5s  Node: %s\n" \
+			"$id" "$name" "$status" "$type" "$node"
 	done
 }
 
@@ -53,4 +53,3 @@ kicktire_qm
 printf '\n'
 kicktires_manage_guest
 printf '\n'
-
