@@ -119,10 +119,68 @@ print_failed_checks --error || exit
 
 # -------------------------- CONSTANTS ----------------------------------------
 
+# VM status
 VM_STATUS_RUNNING='running'
 VM_STATUS_STOPPED='stopped'
 VM_STATUS_PAUSED='paused'
 VM_STATUS_SUSPENDED='suspended'
+
+# Commands that work for both qemu & lxc
+VM_COMMAND_CLONE='clone'
+VM_COMMAND_CONFIG='config'
+VM_COMMAND_CREATE='create'
+VM_COMMAND_DELSNAPSHOT='delsnapshot'
+VM_COMMAND_DESTROY='destroy'
+VM_COMMAND_HELP='help'
+VM_COMMAND_LIST='list'
+VM_COMMAND_LISTSNAPSHOT='listsnapshot'
+VM_COMMAND_MIGRATE='migrate'
+VM_COMMAND_PENDING='pending'
+VM_COMMAND_REBOOT='reboot'
+VM_COMMAND_REMOTE_MIGRATE='remote-migrate'
+VM_COMMAND_RESCAN='rescan'
+VM_COMMAND_RESIZE='resize'
+VM_COMMAND_RESUME='resume'
+VM_COMMAND_ROLLBACK='rollback'
+VM_COMMAND_SET='set'
+VM_COMMAND_SHUTDOWN='shutdown'
+VM_COMMAND_SNAPSHOT='snapshot'
+VM_COMMAND_START='start'
+VM_COMMAND_STATUS='status'
+VM_COMMAND_STOP='stop'
+VM_COMMAND_SUSPEND='suspend'
+VM_COMMAND_TEMPLATE='template'
+VM_COMMAND_TERMINAL='terminal'
+VM_COMMAND_UNLOCK='unlock'
+
+ALL_VM_COMMANDS=(
+	"$VM_COMMAND_CLONE"
+	"$VM_COMMAND_CONFIG"
+	"$VM_COMMAND_CREATE"
+	"$VM_COMMAND_DELSNAPSHOT"
+	"$VM_COMMAND_DESTROY"
+	"$VM_COMMAND_HELP"
+	"$VM_COMMAND_LIST"
+	"$VM_COMMAND_LISTSNAPSHOT"
+	"$VM_COMMAND_MIGRATE"
+	"$VM_COMMAND_PENDING"
+	"$VM_COMMAND_REBOOT"
+	"$VM_COMMAND_REMOTE_MIGRATE"
+	"$VM_COMMAND_RESCAN"
+	"$VM_COMMAND_RESIZE"
+	"$VM_COMMAND_RESUME"
+	"$VM_COMMAND_ROLLBACK"
+	"$VM_COMMAND_SET"
+	"$VM_COMMAND_SHUTDOWN"
+	"$VM_COMMAND_SNAPSHOT"
+	"$VM_COMMAND_START"
+	"$VM_COMMAND_STATUS"
+	"$VM_COMMAND_STOP"
+	"$VM_COMMAND_SUSPEND"
+	"$VM_COMMAND_TEMPLATE"
+	"$VM_COMMAND_TERMINAL"
+	"$VM_COMMAND_UNLOCK"
+)
 
 # -------------------------- UTILITIES ----------------------------------------
 
@@ -132,37 +190,171 @@ function is_devmode() {
 }
 readonly -f is_devmode
 
+# RPC wrapper for `qm`
+function qm() {
+	functrace "$@"
+	if (($# < 2)); then
+		log error "Usage: qm <command> <vmid> [options]"
+		return 255
+	fi
+	local qm_command=('sudo' 'qm')
+	local vmid
+
+	qm_command+=("$@")
+	log trace "RPC: \`${qm_command[*]}\`"
+	ssh "$PVE_SSH_HOST" "${qm_command[@]}" || return
+}
+readonly -f qm
+
+# RPC wrapper for `pct`
+function pct() {
+	functrace "$@"
+	if (($# < 2)); then
+		log error "Usage: pct <command> <vmid> [options]"
+		return 255
+	fi
+	local pct_command=('sudo' 'pct')
+	local vmid
+
+	pct_command+=("$@")
+	log trace "RPC: \`${pct_command[*]}\`"
+	ssh "$PVE_SSH_HOST" "${pct_command[@]}" || return
+}
+readonly -f pct
+
+# RPC wrapper for `pvesh`
+function pvesh() {
+	functrace "$@"
+	if (($# < 1)); then
+		log error "Usage: pvesh <command> [args] [options]"
+		return 255
+	fi
+	local pvesh_command=('sudo' 'pvesh')
+	local vmid
+
+	pvesh_command+=("$@")
+	log trace "RPC: \`${pvesh_command[*]}\`"
+	ssh "$PVE_SSH_HOST" "${pvesh_command[@]}" || return
+}
+readonly -f pvesh
+
+# Usage:
+#   is_valid_vmid <vmid>
+#
+# Returns true if arg is within valid numerical range.
+function is_valid_vmid() {
+	functrace "$@"
+	local vmid="$1"
+	[[ "$vmid" =~ ^[[:digit:]]+$ ]] && ((vmid >= 100 && vmid <= 1000000))
+}
+readonly -f is_valid_vmid
+
+# Usage:
+#   manage_guest <command> <vmid-or-name> [args] [options]
+#
+# Unified qemu/LXC remote guest management interface.
+function manage_guest() {
+	functrace "$@"
+	if (($# < 2)); then
+		log error "Usage: manage_guest <command> <vmid-or-name> [args] [options]"
+		return 255
+	fi
+	local vm_command="$1"
+	local vmid_or_name="$2"
+	shift 2
+
+	local -A guests
+	local id name status type node
+
+	local vmid
+	local vmtype # 'qemu' or 'lxc'
+	local wrapped_command
+
+	if is_valid_vmid "$vmid_or_name"; then
+		vmid="$vmid_or_name"
+	fi
+
+	# find the vmtype, and the vmid if not given
+	get_all_guests guests
+	for id in "${!guests[@]}"; do
+		IFS=' ' read -r name status type node <<<"${guests[$id]}"
+		if [[ -z "$vmid" ]]; then
+			if [[ "$vmid_or_name" == "$name" ]]; then
+				vmid="$id"
+				vmtype="$type"
+				break
+			fi
+		elif [[ "$vmid" == "$id" ]]; then
+			vmtype="$type"
+			break
+		fi
+	done
+
+	if [[ -z "$vmid" || -z "$vmtype" ]]; then
+		log error "Guest not found: $vmid_or_name"
+		return 1
+	fi
+
+	# Perform RPC depending on vmtype
+	case "$vmtype" in
+	'qemu')
+		qm "$vm_command" "$vmid" "$@" || return
+		;;
+	'lxc')
+		pct "$vm_command" "$vmid" "$@" || return
+		;;
+	*)
+		log error "Unknown guest type: $vmtype"
+		return 1
+		;;
+	esac
+}
+readonly -f manage_guest
+
+# get VM status
 function get_vm_status() {
+	functrace "$@"
 	local vmid="$1"
 	ssh "$PVE_SSH_HOST" "sudo qm status '$vmid'" | awk '{print $2}' || return
 }
+readonly -f get_vm_status
 
 function is_vm_status() {
+	functrace "$@"
 	local vmid="$1"
 	local status_to_check="$2"
 	local status_actual
 	status_actual="$(get_vm_status "$vmid")" || return
 	[[ "$status_to_check" == "$status_actual" ]]
 }
+readonly -f is_vm_status
 
 function is_vm_stopped() {
+	functrace "$@"
 	is_vm_status "$1" "$VM_STATUS_STOPPED"
 }
+readonly -f is_vm_stopped
 
 function is_vm_running() {
+	functrace "$@"
 	is_vm_status "$1" "$VM_STATUS_RUNNING"
 }
+readonly -f is_vm_running
 
+# Usage:
+#   wait_until_vm_is <vmid> <status> <timeout>
+#
+# Waits the given number of seconds for VM to be of given status.
 function wait_until_vm_is() {
-	local vmid="$1"
-	local status="$2"
-	local timeout="$3"
-	local i status_actual
-
+	functrace "$@"
 	if (($# < 3)); then
 		log error "Usage: wait_until_vm_is <vmid> <status> <timeout>"
 		return 255
 	fi
+	local vmid="$1"
+	local status="$2"
+	local timeout="$3"
+	local i status_actual
 
 	log debug "Waiting $timeout seconds for VM $vmid to be $status..."
 	for ((i = 0; i < timeout; i++)); do
@@ -177,16 +369,50 @@ function wait_until_vm_is() {
 		return 1
 	fi
 }
+readonly -f wait_until_vm_is
 
 function wait_until_vm_is_stopped() {
+	functrace "$@"
 	wait_until_vm_is "$1" "$VM_STATUS_STOPPED" "$2"
 }
+readonly -f wait_until_vm_is_stopped
 
 function wait_until_vm_is_running() {
+	functrace "$@"
 	wait_until_vm_is "$1" "$VM_STATUS_RUNNING" "$2"
 }
+readonly -f wait_until_vm_is_running
 
-# get_proxmox_guests <assoc_array_name> [status] [type]
+# Usage:
+#   get_guest_id <guest-name>
+#
+# Looks up the ID of a Proxmox guest (VM or container) by name.
+function get_guest_id() {
+	functrace "$@"
+	if (($# != 1)); then
+		log error "Usage: get_guest_id <guest-name>"
+		return 1
+	fi
+	local guest_name="$1"
+	local vmid
+
+	vmid=$(ssh "$PVE_SSH_HOST" "sudo pvesh get /cluster/resources --output-format json" |
+		jq -r --arg name "$guest_name" '
+			.[] | 
+			select(.name == $name and (.type == "qemu" or .type == "lxc")) | 
+			.vmid
+		')
+	if [[ -z "$vmid" ]]; then
+		log error "No guest found with the name '$guest_name'."
+		return 1
+	else
+		printf '%s' "$vmid"
+	fi
+}
+readonly -f get_guest_id
+
+# Usage:
+#   get_all_guests <assoc_array_name> [status] [type]
 #
 # Populates an associative array with entries like:
 #   [VMID]="name status type node"
@@ -196,20 +422,20 @@ function wait_until_vm_is_running() {
 #   type   = qemu | lxc
 #
 # Examples:
-#   get_proxmox_guests guests              # all guests
-#   get_proxmox_guests guests running      # only running (VMs + LXCs)
-#   get_proxmox_guests guests "" lxc       # all containers
-#   get_proxmox_guests guests running qemu # only running VMs
-function get_proxmox_guests() {
+#   get_all_guests guests              # all guests
+#   get_all_guests guests running      # only running (VMs + LXCs)
+#   get_all_guests guests "" lxc       # all containers
+#   get_all_guests guests running qemu # only running VMs
+function get_all_guests() {
+	functrace "$@"
+	if (($# < 1)); then
+		log error "Usage: get_all_guests <assoc_array_name> [status] [type]"
+		return 255
+	fi
 	local -n _out=$1
 	local filter_status=${2:-}
 	local filter_type=${3:-}
 	local vmid name status type node
-
-	if (( $# < 1 )); then
-		log error "Usage: get_proxmox_guests <assoc_array_name> [status] [type]"
-		return 255
-	fi
 
 	_out=()
 	while IFS=$'\t' read -r vmid name status type node; do
@@ -230,6 +456,7 @@ function get_proxmox_guests() {
 			'
 	)
 }
+readonly -f get_all_guests
 
 # -------------------------- ASSERTIONS ---------------------------------------
 

@@ -18,10 +18,15 @@ BASHTOOLS_LOGLEVEL='trace'
 
 # -------------------------- TEST CASES ---------------------------------------
 
-# kick the tires on `get_proxmox_guests`
-function kicktire_get_proxmox_guests() {
+function kicktires_get_guest_id() {
+	local guest_id
+	guest_id="$(get_guest_id jira)"
+	echo "Guest ID: $guest_id"
+}
+
+function kicktire_get_all_guests() {
 	declare -A guests
-	get_proxmox_guests guests
+	get_all_guests guests
 
 	for id in "${!guests[@]}"; do
 			IFS=' ' read -r name status type node <<<"${guests[$id]}"
@@ -30,6 +35,22 @@ function kicktire_get_proxmox_guests() {
 	done
 }
 
+function kicktire_qm() {
+	qm status "$(get_guest_id jira)"
+}
+
+function kicktires_manage_guest() {
+	manage_guest status jira
+}
+
 # -------------------------- TEST RUNNER --------------------------------------
 
-kicktire_get_proxmox_guests
+kicktires_get_guest_id
+printf '\n'
+kicktire_get_all_guests
+printf '\n'
+kicktire_qm
+printf '\n'
+kicktires_manage_guest
+printf '\n'
+

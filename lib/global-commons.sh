@@ -35,6 +35,12 @@ function housekeeping() {
 }
 readonly -f housekeeping
 
+# Helper for trace logs
+function functrace() {
+	log trace "${FUNCNAME[1]} $*"
+}
+readonly -f functrace
+
 # -------------------------- ASSERTIONS ---------------------------------------
 
 function assert_on_server() {

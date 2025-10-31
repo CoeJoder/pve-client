@@ -80,47 +80,7 @@ print_failed_checks --error || exit
 # -------------------------- RECONNAISSANCE -----------------------------------
 # -------------------------- EXECUTION ----------------------------------------
 
-# Enable SPICE for VM by setting the display adapter to 'qxl'.
-function set_display_spice() {
-	log info "Checking VGA config..."
-	if ! sudo qm config "$vmid" | grep -q '^vga: qxl'; then
-		log info 'Setting QXL display driver...'
-		sudo qm set 100 --vga qxl --memory 32 || return
-	fi
-}
-
-# Get the SPICE ticket in JSON format via pvesh
-function get_spice_ticket() {
-	log ingo "Requesting SPICE ticket via pvesh..."
-	if ! sudo pvesh create "/nodes/$PVE_NODE/qemu/$vmid/spiceproxy" --output-format json-pretty; then
-		log error "Failed to retrieve SPICE ticket."
-		return 1
-	fi
-}
-
-function main() {
-	local status
-
-	set_display_spice "$vmid" "$timeout" || return
-	
-	status="$(get_vm_status "$vmid")"
-	if [[ "$status" == "$VM_STATUS_STOPPED" ]]; then
-		log info 'Starting VM...'
-		sudo qm start "$vmid" || return
-		wait_until_vm_is_running "$vmid" "$timeout" || return
-	elif [[ "$status" == "$VM_STATUS_RUNNING" ]]; then
-		log info 'Restarting VM to apply changes...'
-		sudo qm stop "$vmid" || return
-		wait_until_vm_is_stopped "$vmid" "$timeout" || return
-		sudo qm start "$vmid" || return
-		wait_until_vm_is_running "$vmid" "$timeout" || return
-	else
-		log warn "VM is ${status}."
-		yes_or_no --default-yes "Launch SPICE client anyway?" || return
-	fi
-	
-	get_spice_ticket || return
-}
+# TODO read client's command and run one of the above functions
 
 trap 'on_err' ERR
 
