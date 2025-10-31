@@ -26,7 +26,7 @@ declare -r SERVER_CACHE_DIR="/var/tmp/pve-client-cache"
 # if grandparent directory of this script is $PROJECT_NAME, then this is prod
 if [[ "$(basename "$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")")" == "$PROJECT_NAME" ]]; then
 	#  prod                                  | env vars
-	# ---------------------------------------|------------------------------------
+	# ---------------------------------------|-----------------------------------
 	#  ~                                     |
 	#  ├── .cache/                           | _XDG_CACHE_DIR
 	#  │   └── pve-client/                   | CLIENT_CACHE_DIR
@@ -66,7 +66,7 @@ if [[ "$(basename "$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")")" == "$PROJE
 	declare -r PVE_API_TOKEN="$_XDG_CONFIG_DIR/$PROJECT_NAME/pve-api-token"
 else
 	#  dev                                   | env vars
-	# ---------------------------------------|------------------------------------
+	# ---------------------------------------|-----------------------------------
 	#  pve-client/                           | _PROJ_DIR
 	#  ├── external/                         |
 	#  │   └── bash-tools/                   |
@@ -117,7 +117,13 @@ for _command in ssh jq grep awk; do
 done
 print_failed_checks --error || exit
 
-# -------------------------- CONSTANTS --------------------------------------------
+# -------------------------- CONSTANTS ----------------------------------------
+
+VM_STATUS_RUNNING='running'
+VM_STATUS_STOPPED='stopped'
+VM_STATUS_PAUSED='paused'
+VM_STATUS_SUSPENDED='suspended'
+
 # -------------------------- UTILITIES ----------------------------------------
 
 # test whether this is dev env
@@ -125,6 +131,60 @@ function is_devmode() {
 	[[ -n $_TOOLS_DIR ]] &>/dev/null
 }
 readonly -f is_devmode
+
+function get_vm_status() {
+	local vmid="$1"
+	ssh "$PVE_SSH_HOST" "sudo qm status '$vmid'" | awk '{print $2}' || return
+}
+
+function is_vm_status() {
+	local vmid="$1"
+	local status_to_check="$2"
+	local status_actual
+	status_actual="$(get_vm_status "$vmid")" || return
+	[[ "$status_to_check" == "$status_actual" ]]
+}
+
+function is_vm_stopped() {
+	is_vm_status "$1" "$VM_STATUS_STOPPED"
+}
+
+function is_vm_running() {
+	is_vm_status "$1" "$VM_STATUS_RUNNING"
+}
+
+function wait_until_vm_is() {
+	local vmid="$1"
+	local status="$2"
+	local timeout="$3"
+	local i status_actual
+
+	if (($# < 3)); then
+		log error "Usage: wait_until_vm_is <vmid> <status> <timeout>"
+		return 255
+	fi
+
+	log debug "Waiting $timeout seconds for VM $vmid to be $status..."
+	for ((i = 0; i < timeout; i++)); do
+		if is_vm_status "$vmid" "$status"; then
+			return
+		fi
+		sleep 1
+	done
+
+	if ! is_vm_status "$vmid" "$status"; then
+		log error "Timed out waiting for VM to be '$status'"
+		return 1
+	fi
+}
+
+function wait_until_vm_is_stopped() {
+	wait_until_vm_is "$1" "$VM_STATUS_STOPPED" "$2"
+}
+
+function wait_until_vm_is_running() {
+	wait_until_vm_is "$1" "$VM_STATUS_RUNNING" "$2"
+}
 
 # get_proxmox_guests <assoc_array_name> [status] [type]
 #
