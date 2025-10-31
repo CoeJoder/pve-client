@@ -113,22 +113,6 @@ function wait_until_vm_is_running() {
 	wait_until_vm_is "$1" "$VM_STATUS_RUNNING" "$2"
 }
 
-# # Get the VM/CT name using pvesh and filter with jq (requires 'jq' package to be installed: apt install jq)
-# # This command lists all resources and selects the one with the matching VMID
-# VM_NAME=$(pvesh get /cluster/resources --type vm --output-format json | jq -r --arg VMID_ARG "$VMID" '.[] | select(.vmid == ($VMID_ARG|tonumber)) | .name')
-
-# if [ -n "$VM_NAME" ]; then
-# 	echo "Guest Name for ID $VMID: $VM_NAME"
-# else
-# 	# Check for containers (lxc) if not found as a VM
-# 	VM_NAME=$(pvesh get /cluster/resources --type lxc --output-format json | jq -r --arg VMID_ARG "$VMID" '.[] | select(.vmid == ($VMID_ARG|tonumber)) | .name')
-# 	if [ -n "$VM_NAME" ]; then
-# 		echo "Guest Name for ID $VMID: $VM_NAME (LXC Container)"
-# 	else
-# 		echo "No guest found with ID $VMID."
-# 	fi
-# fi
-
 # -------------------------- ASSERTIONS ---------------------------------------
 
 # -------------------------- CHECKS -------------------------------------------
