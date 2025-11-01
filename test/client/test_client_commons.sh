@@ -24,7 +24,7 @@ function kicktires_get_guest_id() {
 	echo "Guest ID: $guest_id"
 }
 
-function kicktire_get_all_guests() {
+function kicktires_get_all_guests() {
 	declare -A guests
 	get_all_guests guests
 
@@ -35,7 +35,7 @@ function kicktire_get_all_guests() {
 	done
 }
 
-function kicktire_qm() {
+function kicktires_qm() {
 	qm status "$(get_guest_id jira)"
 }
 
@@ -47,9 +47,9 @@ function kicktires_manage_guest() {
 
 kicktires_get_guest_id
 printf '\n'
-kicktire_get_all_guests
+kicktires_get_all_guests
 printf '\n'
-kicktire_qm
+kicktires_qm
 printf '\n'
 kicktires_manage_guest
 printf '\n'

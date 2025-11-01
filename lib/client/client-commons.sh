@@ -173,10 +173,10 @@ function qm() {
 		log error "Usage: qm <command> <vmid> [options]"
 		return 255
 	fi
-	local qm_command=('sudo' 'qm')
+	local qm_command=('sudo' 'qm' "$@")
+	shift $#
 	local vmid
 
-	qm_command+=("$@")
 	log trace "RPC: \`${qm_command[*]}\`"
 	# shellcheck disable=SC2029  # client-side expansion
 	ssh "$PVE_SSH_HOST" "${qm_command[@]}" || return
@@ -193,10 +193,10 @@ function pct() {
 		log error "Usage: pct <command> <vmid> [options]"
 		return 255
 	fi
-	local pct_command=('sudo' 'pct')
+	local pct_command=('sudo' 'pct' "$@")
+	shift $#
 	local vmid
 
-	pct_command+=("$@")
 	log trace "RPC: \`${pct_command[*]}\`"
 	# shellcheck disable=SC2029  # client-side expansion
 	ssh "$PVE_SSH_HOST" "${pct_command[@]}" || return
@@ -213,10 +213,10 @@ function pvesh() {
 		log error "Usage: pvesh <command> [args] [options]"
 		return 255
 	fi
-	local pvesh_command=('sudo' 'pvesh')
+	local pvesh_command=('sudo' 'pvesh' "$@")
+	shift $#
 	local vmid
 
-	pvesh_command+=("$@")
 	log trace "RPC: \`${pvesh_command[*]}\`"
 	# shellcheck disable=SC2029  # client-side expansion
 	ssh "$PVE_SSH_HOST" "${pvesh_command[@]}" || return
@@ -254,6 +254,7 @@ function manage_guest() {
 	local vmid_or_name="$2"
 	shift 2
 	local -a args_and_options=("$@")
+	shift $#
 	local -A guests
 	local id name status type node
 	local vmid
@@ -491,6 +492,7 @@ function get_all_guests() {
 	local -n _out=$1
 	local filter_status=${2:-}
 	local filter_type=${3:-}
+	shift $#
 	local vmid name status type node
 
 	_out=()
