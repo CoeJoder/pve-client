@@ -409,7 +409,7 @@ readonly -f wait_until_vm_is
 # Waits the given number of seconds for VM to be stopped.
 function wait_until_vm_is_stopped() {
 	functrace "$@"
-	if (($# < 3)); then
+	if (($# < 2)); then
 		log error "Usage: wait_until_vm_is_stopped <guest> <timeout>"
 		return 255
 	fi
@@ -427,7 +427,7 @@ readonly -f wait_until_vm_is_stopped
 # Waits the given number of seconds for VM to be running.
 function wait_until_vm_is_running() {
 	functrace "$@"
-	if (($# < 3)); then
+	if (($# < 2)); then
 		log error "Usage: wait_until_vm_is_running <guest> <timeout>"
 		return 255
 	fi
@@ -445,7 +445,7 @@ readonly -f wait_until_vm_is_running
 # Looks up the ID of a VM by name.
 function get_guest_id() {
 	functrace "$@"
-	if (($# != 1)); then
+	if (($# < 1)); then
 		log error "Usage: get_guest_id <guest-name>"
 		return 1
 	fi
