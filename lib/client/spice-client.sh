@@ -151,7 +151,6 @@ function get_spice_ticket() {
 	functrace
 
 	log info "Requesting SPICE ticket via pvesh..."
-	# if ! ssh "$PVE_SSH_HOST" "sudo pvesh create "/nodes/$PVE_NODE/qemu/$vmid/spiceproxy" --output-format json-pretty"; then
 	if ! pvesh create "/nodes/$PVE_NODE/qemu/$vmid/spiceproxy" --output-format json-pretty; then
 		log error "Failed to retrieve SPICE ticket."
 		return 1
