@@ -97,7 +97,7 @@ check_is_valid_port PVE_PORT
 check_is_defined PVE_NODE
 check_is_defined PVE_SSH_HOST
 
-for _command in jq remote-viewer; do
+for _command in jq remote-viewer grep; do
 	check_command_exists_on_path _command
 done
 print_failed_checks --error || exit
