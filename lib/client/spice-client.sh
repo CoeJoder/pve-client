@@ -13,11 +13,12 @@
 #
 # Algorithm:
 #   1a. If SPICE is not enabled:
-#     a. If VM is running, stop it.
+#     a. If VM is running or paused, stop it.
 #     b. Enable SPICE driver.
 #     c. Start the VM.
 #   1b. Else:
-#     a. If VM is stopped, start it.
+#     a1. If VM is stopped, start it.
+#     a2. Else if VM is paused, resume it.
 #   2. Generate a secure, one-time SPICE ticket.
 #   3. Convert the SPICE ticket JSON into a VirtViewer INI temp file.
 #   4. Launch VirtViewer GUI with the INI file, which is then deleted.
@@ -194,7 +195,7 @@ function resume_vm() {
 function on_exit() {
 	# Wait for remote-viewer to be done reading the file.
 	sleep 3
-	if [[ -n "$vv_temp_file" ]]; then
+	if [[ -f "$vv_temp_file" ]]; then
 		shred -u -z "$vv_temp_file" &>/dev/null || rm -rf --interactive=never "$vv_temp_file" &>/dev/null
 	fi
 }
