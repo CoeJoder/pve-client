@@ -38,9 +38,6 @@ printinfo "Generating new ${theme_filename}$DOTENV${color_reset}...\n"
 
 printinfo "Enter the values to use when accessing the PVE host CLI and REST API"
 
-declare bashtools_loglevel
-choose_from_menu "Select log level" bashtools_loglevel "${_BASHTOOLS_LOGLEVELS_KEYS[@]}"
-
 declare pve_host
 read_no_default "PVE host" pve_host
 
@@ -83,9 +80,6 @@ cat <<EOF | tee "$DOTENV"
 # Environment variables used by \`pve-client\`.
 
 # -------------------------- CONFIGURABLE; EDIT AS NEEDED ---------------------
-
-# the log-level used by default in all scripts
-BASHTOOLS_LOGLEVEL='$bashtools_loglevel'
 
 # used when accessing PVE host CLI (SSH) and REST API (HTTP)
 PVE_HOST='$pve_host'
