@@ -181,6 +181,15 @@ function start_vm() {
 	wait_until_vm_is_running "$vmid" "$timeout" || return
 }
 
+# Resume VM and wait for it to be running.
+function resume_vm() {
+	functrace
+
+	log info 'Resuming VM...'
+	manage_guest resume "$vmid" || return
+	wait_until_vm_is_running "$vmid" "$timeout" || return
+}
+
 # Ensure temp file is deleted even if remote-viewer fails.
 function on_exit() {
 	# Wait for remote-viewer to be done reading the file.
@@ -197,14 +206,31 @@ trap 'on_exit &>/dev/null &' EXIT
 status="$(get_vm_status "$vmid")"
 
 if ! is_display_spice; then
-	if [[ "$status" == "$VM_STATUS_RUNNING" ]]; then
+	if [[ "$status" != "$VM_STATUS_STOPPED" ]]; then
+		# VM is running or paused.
+		if ! yes_or_no --default-yes "VM is $status. Enable SPICE and restart it?"; then
+			exit 1
+		fi
 		stop_vm || exit
 	fi
+	# VM is stopped.  Enable SPICE and restart it.
 	set_display_spice || exit
 	start_vm || exit
 else
-	if [[ "$status" == "$VM_STATUS_STOPPED" ]]; then
-		start_vm || exit
+	if [[ "$status" == "$VM_STATUS_PAUSED" ]]; then
+		# VM is paused with SPICE already enabled.
+		if yes_or_no --default-yes "VM is paused. Resume it and connect via SPICE?"; then
+			resume_vm || exit
+		else
+			exit 1
+		fi
+	elif [[ "$status" == "$VM_STATUS_STOPPED" ]]; then
+		# VM is stopped with SPICE already enabled.
+		if yes_or_no --default-yes "VM is stopped. Start it and connect via SPICE?"; then
+			start_vm || exit
+		else
+			exit 1
+		fi
 	fi
 fi
 
