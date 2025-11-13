@@ -153,13 +153,13 @@ function set_display_spice() {
 	manage_guest set "$vmid" --vga qxl || return
 }
 
-# Get the SPICE ticket in JSON format via pvesh.
+# Generate a SPICE ticket from the host.
 function get_spice_ticket() {
 	functrace
 
-	log info "Requesting SPICE ticket via pvesh..."
+	log info "Requesting SPICE ticket..."
 	if ! pvesh create "/nodes/$PVE_NODE/qemu/$vmid/spiceproxy" --output-format json-pretty; then
-		log error "Failed to retrieve SPICE ticket."
+		log error "Failed to generate a SPICE ticket."
 		return 1
 	fi
 }
