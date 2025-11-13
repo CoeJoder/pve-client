@@ -1,15 +1,14 @@
 #!/bin/bash
 #
-# Usage:
-#   spice-client.sh [options] <guest>
+# Usage: spice-client.sh [options] <guest>
+# 
+# Launch a SPICE client connection to VM or container.
 # 
 # Options:
 #   --timeout val     The VM restart timeout in seconds (default: 15)
 #   --log-level val   The log-level (default: info)
 #   --no-banner       Skip banner display
 #   --help, -h        Show this message
-#
-# Launch a SPICE client connection to VM or container.
 #
 # Algorithm:
 #   1a. If SPICE is not enabled:
@@ -29,16 +28,15 @@ this_dir="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
 source "$this_dir/client-commons.sh"
 housekeeping
 
-function show_usage() {
-	cat >&2 <<-EOF
-		Usage: $(basename "${BASH_SOURCE[0]}") [options] <guest>
-		Options:
-		--timeout ${underline}val${nounderline}     The VM restart timeout in seconds (default: 15)
-		--log-level ${underline}val${nounderline}   The log-level (default: info)
-		--no-banner       Skip banner display
-		--help, -h        Show this message
-	EOF
-}
+usage="Usage: $(basename "${BASH_SOURCE[0]}") [options] <guest>
+
+Launch a SPICE client connection to VM or container.
+
+Options:
+  --timeout ${underline}val${nounderline}     The VM restart timeout in seconds (default: 15)
+  --log-level ${underline}val${nounderline}   The log-level (default: info)
+  --no-banner       Skip banner display
+  --help, -h        Show this message"
 
 _parsed_args=$(getopt \
 	--options='h' \
@@ -69,7 +67,7 @@ while true; do
 		continue
 		;;
 	-h | --help)
-		show_usage
+		stdout "$usage"
 		exit 0
 		;;
 	--)
@@ -77,14 +75,14 @@ while true; do
 		break
 		;;
 	*)
-		log error "unknown argument: $1"
+		stderr "unknown argument: $1"
 		exit 1
 		;;
 	esac
 done
 
 if (($# < 1)); then
-	show_usage
+	stderr "guest argument missing"
 	exit 1
 fi
 guest="$1"
