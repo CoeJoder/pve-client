@@ -151,7 +151,7 @@ function set_display_spice() {
 	manage_guest set "$vmid" --vga qxl || return
 }
 
-# Get the SPICE ticket in JSON format via pvesh
+# Get the SPICE ticket in JSON format via pvesh.
 function get_spice_ticket() {
 	functrace
 
@@ -180,8 +180,18 @@ function start_vm() {
 	wait_until_vm_is_running "$vmid" "$timeout" || return
 }
 
+# Ensure temp file is deleted even if remote-viewer fails.
+function on_exit() {
+	# Wait for remote-viewer to be done reading the file.
+	sleep 3
+	if [[ -n "$vv_temp_file" ]]; then
+		shred -u -z "$vv_temp_file" &>/dev/null || rm -rf --interactive=never "$vv_temp_file" &>/dev/null
+	fi
+}
+
 set -E
 trap 'on_err' ERR
+trap 'on_exit &>/dev/null &' EXIT
 
 status="$(get_vm_status "$vmid")"
 
@@ -206,11 +216,6 @@ if [[ ! -s "$vv_temp_file" ]]; then
 fi
 
 log info "Launching VirtViewer..."
-if ! (remote-viewer -- "$vv_temp_file" &>/dev/null &); then
-	# Ensure temp file is deleted even if remote-viewer fails.
-	if [[ -n "$vv_temp_file" ]]; then
-		rm -rf --interactive=never "$vv_temp_file" &>/dev/null
-	fi
-fi
-
+remote-viewer -- "$vv_temp_file" &>/dev/null &
+	
 # -------------------------- POSTCONDITIONS -----------------------------------
