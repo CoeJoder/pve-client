@@ -14,8 +14,13 @@
 #   3. Convert the SPICE ticket JSON into a VirtViewer INI temp file.
 #   4. Launch VirtViewer GUI with the INI file, which is then deleted.
 #
-# Usage:
-#   spice-client.sh [options] <vm>
+# Usage: spice-client.sh [options] <guest>
+# Options:
+# --timeout val     The VM restart timeout in seconds (default: 15)
+# --log-level val   The log-level (default: info)
+# --no-banner       Skip banner display
+# --help, -h        Show this message
+# 
 # -------------------------- HEADER -------------------------------------------
 
 this_dir="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
@@ -24,7 +29,7 @@ housekeeping
 
 function show_usage() {
 	cat >&2 <<-EOF
-		Usage: $(basename "${BASH_SOURCE[0]}") [options] <guest-name>
+		Usage: $(basename "${BASH_SOURCE[0]}") [options] <guest>
 		Options:
 		--timeout ${underline}val${nounderline}     The VM restart timeout in seconds (default: 15)
 		--log-level ${underline}val${nounderline}   The log-level (default: info)
@@ -34,7 +39,7 @@ function show_usage() {
 }
 
 _parsed_args=$(getopt \
-	--options='h,t:' \
+	--options='h' \
 	--longoptions='help,no-banner,timeout:,log-level:' \
 	--name "$(basename "${BASH_SOURCE[0]}")" -- "$@")
 eval set -- "$_parsed_args"
@@ -46,7 +51,7 @@ no_banner=0
 
 while true; do
 	case "$1" in
-	-t | --timeout)
+	--timeout)
 		timeout="$2"
 		shift 2
 		continue
