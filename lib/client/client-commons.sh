@@ -309,7 +309,7 @@ function get_vm_status() {
 	functrace "$@"
 	if (($# != 1)); then
 		log error "Usage: get_vm_status <guest>"
-		return 1
+		return 255
 	fi
 	local guest="$1"
 	shift
@@ -326,7 +326,7 @@ function is_vm_status() {
 	functrace "$@"
 	if (($# != 2)); then
 		log error "Usage: is_vm_status <guest> <status>"
-		return 1
+		return 255
 	fi
 	local guest="$1"
 	local status_to_check="$2"
@@ -346,7 +346,7 @@ function is_vm_stopped() {
 	functrace "$@"
 	if (($# != 1)); then
 		log error "Usage: is_vm_stopped <guest>"
-		return 1
+		return 255
 	fi
 	local guest="$1"
 	shift
@@ -363,7 +363,7 @@ function is_vm_running() {
 	functrace "$@"
 	if (($# != 1)); then
 		log error "Usage: is_vm_running <guest>"
-		return 1
+		return 255
 	fi
 	local guest="$1"
 	shift
@@ -447,7 +447,7 @@ function get_guest_id() {
 	functrace "$@"
 	if (($# < 1)); then
 		log error "Usage: get_guest_id <guest-name>"
-		return 1
+		return 255
 	fi
 	local guest_name="$1"
 	shift
