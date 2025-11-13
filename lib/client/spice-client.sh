@@ -1,6 +1,14 @@
 #!/bin/bash
 #
-# spice-client.sh
+# Usage:
+#   spice-client.sh [options] <guest>
+# 
+# Options:
+#   --timeout val     The VM restart timeout in seconds (default: 15)
+#   --log-level val   The log-level (default: info)
+#   --no-banner       Skip banner display
+#   --help, -h        Show this message
+#
 # Launch a SPICE client connection to VM or container.
 #
 # Algorithm:
@@ -13,14 +21,7 @@
 #   2. Generate a secure, one-time SPICE ticket.
 #   3. Convert the SPICE ticket JSON into a VirtViewer INI temp file.
 #   4. Launch VirtViewer GUI with the INI file, which is then deleted.
-#
-# Usage: spice-client.sh [options] <guest>
-# Options:
-# --timeout val     The VM restart timeout in seconds (default: 15)
-# --log-level val   The log-level (default: info)
-# --no-banner       Skip banner display
-# --help, -h        Show this message
-# 
+
 # -------------------------- HEADER -------------------------------------------
 
 this_dir="$(realpath "$(dirname "${BASH_SOURCE[0]}")")"
