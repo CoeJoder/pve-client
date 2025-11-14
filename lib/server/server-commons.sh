@@ -39,6 +39,7 @@ declare -r DEPLOYMENT_DIR
 
 declare -r EXT_BASHTOOLS_SRC_DIR="$DEPLOYMENT_DIR/external/bash-tools/src"
 declare -r PVE_ROOT_CA="$CLIENT_CACHE_DIR/pve-root-ca.pem"
+declare -r DOTENV="$DEPLOYMENT_DIR/.env"
 
 # -------------------------- IMPORTS ------------------------------------------
 
