@@ -123,7 +123,6 @@ print_failed_checks --error || exit
 VM_STATUS_RUNNING='running'
 VM_STATUS_STOPPED='stopped'
 VM_STATUS_PAUSED='paused'
-VM_STATUS_SUSPENDED='suspended'
 
 # Commands that work for both qemu & lxc
 declare -rA ALL_VM_COMMANDS=(
