@@ -35,19 +35,18 @@ if [[ "$(basename "$(realpath "$(dirname "${BASH_SOURCE[0]}")/..")")" == "$PROJE
 	#  │   └── pve-client/                   |
 	#  │       ├── .env                      | DOTENV
 	#  │       └── pve-api-token             | PVE_API_TOKEN
-	#  ├── .local/                           |
-	#  │   └── .share/                       | _XDG_DATA_DIR
-	#  │       └── pve-client/               |
-	#  │           ├── external/             |
-	#  │           │   └── bash-tools/       |
-	#  │           │       └── src           | EXT_BASHTOOLS_SRC_DIR
-	#  │           ├── client/               | LIB_CLIENT_DIR
-	#  |           |   └── client-commons.sh | (this script)
-	#  │           ├── server/               | LIB_SERVER_DIR
-	#  |           └── global-commons.sh     |
 	#  └── .local/                           |
-	#      └── bin/                          | _XDG_BIN_DIR
-	#          └── pve.sh                    | PVECLIENT_BIN
+	#      ├── bin/                          | _XDG_BIN_DIR
+	#      │   └── pve.sh                    | PVECLIENT_BIN
+	#      └── .share/                       | _XDG_DATA_DIR
+	#          └── pve-client/               |
+	#              ├── external/             |
+	#              │   └── bash-tools/       |
+	#              │       └── src           | EXT_BASHTOOLS_SRC_DIR
+	#              ├── client/               | LIB_CLIENT_DIR
+	#              |   └── client-commons.sh | (this script)
+	#              ├── server/               | LIB_SERVER_DIR
+	#              └── global-commons.sh     |
 
 	declare -r _XDG_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}"
 	declare -r _XDG_CONFIG_DIR="${XDG_CONFIG_HOME:-$HOME/.config}"
